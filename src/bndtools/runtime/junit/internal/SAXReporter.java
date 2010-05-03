@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
@@ -55,6 +56,8 @@ class SAXReporter implements TestReporter {
 	private static final String ATTR_TYPE = "type";
 	private static final String ATTR_MESSAGE = "message";
 
+	private static final String ELEM_BUNDLE = "bundle";
+
 
 	
 	final File outputFile;
@@ -62,7 +65,6 @@ class SAXReporter implements TestReporter {
 	
 	TransformerHandler handler;
 	Collection<Exception> errors;
-	private boolean finished;
 
 	SAXReporter(File output) {
 		this.outputFile = output;
@@ -71,8 +73,9 @@ class SAXReporter implements TestReporter {
 	public void begin(Bundle[] allBundles, List<? extends Test> tests, int realCount) throws Exception {
 		SAXTransformerFactory xformFactory = (SAXTransformerFactory) SAXTransformerFactory.newInstance();
 		
-		finished = false;
 		handler = xformFactory.newTransformerHandler();
+		handler.getTransformer().setOutputProperty(OutputKeys.INDENT, "yes");
+		handler.getTransformer().setOutputProperty("{http://xml.apache.org/xslt}indent-amount", String.valueOf(4));
 		handler.setResult(new StreamResult(outputFile));
 		
 		AttributesImpl atts;
@@ -90,6 +93,9 @@ class SAXReporter implements TestReporter {
 			atts.addAttribute(null, ATTR_BUNDLE_ID, ATTR_BUNDLE_ID, CDATA, Long.toString(bundle.getBundleId()));
 			atts.addAttribute(null, ATTR_BUNDLE_BSN, ATTR_BUNDLE_BSN, CDATA, bundle.getSymbolicName());
 			atts.addAttribute(null, ATTR_BUNDLE_VERSION, ATTR_BUNDLE_VERSION, CDATA, "" + bundle.getHeaders().get(Constants.BUNDLE_VERSION));
+			
+			handler.startElement(null, ELEM_BUNDLE, ELEM_BUNDLE, atts);
+			handler.endElement(null, ELEM_BUNDLE, ELEM_BUNDLE);
 		}
 	}
 	

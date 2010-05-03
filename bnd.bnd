@@ -1,5 +1,4 @@
--buildpath: osgi.core,\
-	osgi.cmpn
+-buildpath: osgi.core,osgi.cmpn
 -classpath: junit.jar 
 
 Bundle-Version: 0.0.0.${tstamp;yyyyMMdd-HHmm}

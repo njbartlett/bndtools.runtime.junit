@@ -123,8 +123,9 @@ public abstract class OSGiTestCase extends TestCase {
 	 * @param operation
 	 *            The operation to perform against the service.
 	 * @return
+	 * @throws Exception 
 	 */
-	protected <S,R> R withService(Class<S> service, String filter, Operation<? super S, R> operation) {
+	protected <S,R> R withService(Class<S> service, String filter, Operation<? super S, R> operation) throws Exception {
 		return withService(service, filter, 0, operation);
 	}
 	
@@ -155,8 +156,9 @@ public abstract class OSGiTestCase extends TestCase {
 	 * @param operation
 	 *            The operation to perform against the service.
 	 * @return
+	 * @throws Exception 
 	 */
-	protected <S,R> R withService(Class<S> service, String filter, long timeout, Operation<? super S, R> operation) {
+	protected <S,R> R withService(Class<S> service, String filter, long timeout, Operation<? super S, R> operation) throws Exception {
 		BundleContext context = getBundleContext();
 		
 		ServiceTracker tracker = null;

@@ -22,5 +22,5 @@ package bndtools.runtime.junit;
  *            The result type
  */
 public interface Operation<S, R> {
-	R perform(S service);
+	R perform(S service) throws Exception;
 }
