@@ -66,7 +66,7 @@ public class Activator implements BundleActivator {
 
 		// Read the keepalive setting
 		String keepAliveStr = context.getProperty(LauncherConstants.PROP_KEEP_ALIVE);
-		keepAlive = "true".equalsIgnoreCase(keepAliveStr);
+		keepAlive = !"false".equalsIgnoreCase(keepAliveStr);
 		
 		// Create the reporter setting
 		reporter = createTestReporter(context);
