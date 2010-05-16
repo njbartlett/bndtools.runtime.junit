@@ -37,6 +37,7 @@ import org.osgi.framework.SynchronousBundleListener;
 public class Activator implements BundleActivator {
 	
 	private static final String HEADER_TEST_SUITES = "Test-Suites";
+    private static final String HEADER_TEST_CASES = "Test-Cases";
 	
 	private static final int DEFAULT_THREAD_POOL_SIZE = 1;
 	private static final long DEFAULT_START_TIMEOUT = 45; // 45 seconds
@@ -218,23 +219,29 @@ public class Activator implements BundleActivator {
 		log.fine("Stopping JUnit activator");
 	}
 	
-	public static void addBundleSuites(Collection<? super Test> suites, Bundle bundle) {
-		String suitesStr = (String) bundle.getHeaders().get(HEADER_TEST_SUITES);
-		if(suitesStr != null && suitesStr.trim().length() > 0) {
-			String[] names = suitesStr.split(",");
-			for (String name : names) {
-				name = name.trim();
-				if(name.length() > 0) {
-					try {
-						Class<?> clazz = bundle.loadClass(name);
-						suites.add(new TestSuite(clazz));
-					} catch (ClassNotFoundException e) {
-						suites.add(new InvalidTest(name, e));
-					}
-				}
-			}
-		}
-	}
+    public static void addBundleSuites(Collection<? super Test> suites, Bundle bundle) {
+        String suitesStr = (String) bundle.getHeaders().get(HEADER_TEST_SUITES);
+        addBundleSuites(suites, bundle, suitesStr);
+        String casesStr = (String) bundle.getHeaders().get(HEADER_TEST_CASES);
+        addBundleSuites(suites, bundle, casesStr);
+    }
+
+    static void addBundleSuites(Collection<? super Test> suites, Bundle bundle, String suitesStr) {
+        if (suitesStr != null && suitesStr.trim().length() > 0) {
+            String[] names = suitesStr.split(",");
+            for (String name : names) {
+                name = name.trim();
+                if (name.length() > 0) {
+                    try {
+                        Class<?> clazz = bundle.loadClass(name);
+                        suites.add(new TestSuite(clazz));
+                    } catch (ClassNotFoundException e) {
+                        suites.add(new InvalidTest(name, e));
+                    }
+                }
+            }
+        }
+    }
 	
 	static int flattenTests(Collection<? super Test> output, Enumeration<? extends Test> input) {
 		int count = 0;
