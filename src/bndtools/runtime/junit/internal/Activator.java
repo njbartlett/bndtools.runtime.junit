@@ -4,7 +4,7 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Contributors:
  *     Neil Bartlett - initial API and implementation
  ******************************************************************************/
@@ -32,27 +32,28 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.SynchronousBundleListener;
 
 public class Activator implements BundleActivator {
-	
+
 	private static final String HEADER_TEST_SUITES = "Test-Suites";
     private static final String HEADER_TEST_CASES = "Test-Cases";
-	
+
 	private static final int DEFAULT_THREAD_POOL_SIZE = 1;
 	private static final long DEFAULT_START_TIMEOUT = 45; // 45 seconds
 
 	private static final String REPORTER_PORT_PREFIX = "port:";
 	private static final String REPORTER_FILE_PREFIX = "file:";
-	
+
 	private final Logger log = Logger.getLogger(Activator.class.getPackage().getName());
-	
+
 	private BundleContext context;
 	private ScheduledExecutorService threadPool;
 	private TestReporter reporter;
 	private AtomicBoolean testRunnerLock = new AtomicBoolean(false);
 	private boolean keepAlive = false;
-	
+
 	private final SynchronousBundleListener bundleListener = new SynchronousBundleListener() {
 		public void bundleChanged(BundleEvent event) {
 			if(BundleEvent.STARTED == event.getType()) {
@@ -68,14 +69,14 @@ public class Activator implements BundleActivator {
 		// Read the keepalive setting
 		String keepAliveStr = context.getProperty(LauncherConstants.PROP_KEEP_ALIVE);
 		keepAlive = !"false".equalsIgnoreCase(keepAliveStr);
-		
+
 		// Create the reporter setting
 		reporter = createTestReporter(context);
 		if(reporter == null) {
 			maybeKillFramework();
 			return;
 		}
-		
+
 		// Create a testing thread pool
 		String threadPoolSizeStr = context.getProperty(LauncherConstants.PROP_THREADPOOL_SIZE);
 		int threadPoolSize = threadPoolSizeStr != null
@@ -83,13 +84,13 @@ public class Activator implements BundleActivator {
 			: DEFAULT_THREAD_POOL_SIZE;
 		log.log(Level.FINE, "Creating testing thread pool with {0} thread(s).", threadPoolSize);
 		threadPool = Executors.newScheduledThreadPool(threadPoolSize);
-		
+
 		// Add the bundle listener
 		context.addBundleListener(bundleListener);
-		
+
 		// Perform an initial check
 		maybeStartTesting();
-		
+
 		// Register a timeout to kill the framework if testing fails to start
 		if(!keepAlive) {
 			final long timeout = getStartTimeout(context);
@@ -110,7 +111,7 @@ public class Activator implements BundleActivator {
 
 	protected TestReporter createTestReporter(final BundleContext context) {
 		TestReporter reporter = null;
-		
+
 		String reporterSpec = context.getProperty(LauncherConstants.PROP_REPORTER);
 		if(reporterSpec == null) {
 			log.severe("No JUnit reporter was specified; aborting tests.");
@@ -143,17 +144,20 @@ public class Activator implements BundleActivator {
 		}
 		return DEFAULT_START_TIMEOUT;
 	}
-	
+
 	void maybeStartTesting() {
-		// Any non-ACTIVE bundle (except for *this* bundle, which may be STARTING) should defer the test run
+		// Any non-ACTIVE bundle (except for *this* bundle, which may be STARTING, and fragments, which are never ACTIVE)
+	    // should defer the test run
 		for (Bundle bundle : context.getBundles()) {
-			if(Bundle.ACTIVE != bundle.getState() && bundle.getBundleId() != context.getBundle().getBundleId()) {
+			boolean active = Bundle.ACTIVE == bundle.getState();
+            boolean thisBundle = bundle.getBundleId() != context.getBundle().getBundleId();
+            if(!active && !thisBundle && !isFragment(bundle)) {
 				log.log(Level.INFO, "Deferring JUnit run, bundle \"{0}\" (and perhaps others) is not yet active.", bundle.getSymbolicName());
 				return;
 			}
 		}
 		log.fine("All bundles have reached ACTIVE state, triggering start of JUnit testing.");
-		
+
 		// We can remove the listener and start testing
 		Runnable task = new Runnable() {
 			public void run() {
@@ -165,27 +169,31 @@ public class Activator implements BundleActivator {
 		context.removeBundleListener(bundleListener);
 	}
 
-	void doTesting() {
+	boolean isFragment(Bundle bundle) {
+	    return bundle.getHeaders().get(Constants.FRAGMENT_HOST) != null;
+    }
+
+    void doTesting() {
 		if(!testRunnerLock.compareAndSet(false, true)) {
 			// Somebody beat us to it, or the test run timed out.
 			return;
 		}
 		log.info("Starting tests");
-		
+
 		Bundle[] bundles = context.getBundles();
 		TestResult result = new TestResult();
-		
+
 		try {
 			Vector<Test> tests = new Vector<Test>();
 			for (Bundle bundle : bundles) {
 				addBundleSuites(tests, bundle);
 			}
 			List<Test> flattenedTests = new ArrayList<Test>();
-			
+
 			int realCount = flattenTests(flattenedTests, tests.elements());
 			reporter.begin(bundles, flattenedTests, realCount);
 			result.addListener(reporter);
-			
+
 			// Run the bundle suites
 			for (Test test : tests) {
 				test.run(result);
@@ -218,7 +226,7 @@ public class Activator implements BundleActivator {
 			threadPool.shutdown();
 		log.fine("Stopping JUnit activator");
 	}
-	
+
     public static void addBundleSuites(Collection<? super Test> suites, Bundle bundle) {
         String suitesStr = (String) bundle.getHeaders().get(HEADER_TEST_SUITES);
         addBundleSuites(suites, bundle, suitesStr);
@@ -242,13 +250,13 @@ public class Activator implements BundleActivator {
             }
         }
     }
-	
+
 	static int flattenTests(Collection<? super Test> output, Enumeration<? extends Test> input) {
 		int count = 0;
 		while(input.hasMoreElements()) {
 			Test inputTest = input.nextElement();
 			output.add(inputTest);
-			
+
 			if(inputTest instanceof TestSuite) {
 				Enumeration<? extends Test> children = ((TestSuite) inputTest).tests();
 				count += flattenTests(output, children);
