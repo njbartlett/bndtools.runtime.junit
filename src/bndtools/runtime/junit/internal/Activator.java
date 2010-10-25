@@ -150,7 +150,7 @@ public class Activator implements BundleActivator {
 	    // should defer the test run
 		for (Bundle bundle : context.getBundles()) {
 			boolean active = Bundle.ACTIVE == bundle.getState();
-            boolean thisBundle = bundle.getBundleId() != context.getBundle().getBundleId();
+            boolean thisBundle = bundle.getBundleId() == context.getBundle().getBundleId();
             if(!active && !thisBundle && !isFragment(bundle)) {
 				log.log(Level.INFO, "Deferring JUnit run, bundle \"{0}\" (and perhaps others) is not yet active.", bundle.getSymbolicName());
 				return;

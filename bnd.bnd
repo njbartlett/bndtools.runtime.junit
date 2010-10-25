@@ -1,9 +1,9 @@
 -buildpath: osgi.core,osgi.cmpn
 -classpath: junit.jar 
 
-Bundle-Version: 0.0.0.${tstamp;yyyyMMdd-HHmm}
+Bundle-Version: 0.0.2
 Private-Package: bndtools.runtime.junit.internal
-Export-Package: bndtools.runtime.junit;version=${Bundle-Version},\
+Export-Package: bndtools.runtime.junit,\
 	junit.framework;version=3.8.2
 
 Bundle-License: http://www.opensource.org/licenses/eclipse-1.0.php
