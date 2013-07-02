@@ -164,7 +164,7 @@ public abstract class OSGiTestCase extends TestCase {
 		ServiceTracker tracker = null;
 		if(filter != null) {
 			try {
-				Filter combined = FrameworkUtil.createFilter(String.format("(&(%s=%s)%s)", Constants.OBJECTCLASS, service.getName()));
+				Filter combined = FrameworkUtil.createFilter(String.format("(&(%s=%s)%s)", Constants.OBJECTCLASS, service.getName(), filter));
 				tracker = new ServiceTracker(context, combined, null);
 			} catch (InvalidSyntaxException e) {
 				fail("Invalid filter syntax.");
